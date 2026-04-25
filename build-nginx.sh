@@ -145,6 +145,11 @@ build_nginx() {
 
     cd "$NGINX_SRC"
 
+    # CFLAGS must be set so nginx's auto/cc/conf populates CC_TEST_FLAGS,
+    # which is needed for configure feature tests (like OpenSSL detection)
+    # to find our BoringSSL include path via --with-cc-opt.
+    export CFLAGS="-I$BSSL_INCLUDE"
+
     ./configure \
         --prefix="$PREFIX" \
         --sbin-path="/usr/sbin/nginx" \
