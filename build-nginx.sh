@@ -101,12 +101,14 @@ build_boringssl() {
     ninja -j"$JOBS"
 
     BSSL_INCLUDE="$bssl_src/include"
-    BSSL_LIB_SSL="$bssl_build/ssl"
-    BSSL_LIB_CRYPTO="$bssl_build/crypto"
 
-    # Verify libs exist
-    [ -f "$BSSL_LIB_SSL/libssl.a" ] || err "libssl.a not found"
-    [ -f "$BSSL_LIB_CRYPTO/libcrypto.a" ] || err "libcrypto.a not found"
+    # Locate built libraries (path varies across BoringSSL versions)
+    BSSL_LIB_SSL="$(find "$bssl_build" -name libssl.a -type f 2>/dev/null | head -1)" || true
+    BSSL_LIB_CRYPTO="$(find "$bssl_build" -name libcrypto.a -type f 2>/dev/null | head -1)" || true
+    [ -n "$BSSL_LIB_SSL" ] || err "libssl.a not found in $bssl_build"
+    [ -n "$BSSL_LIB_CRYPTO" ] || err "libcrypto.a not found in $bssl_build"
+    BSSL_LIB_SSL="$(dirname "$BSSL_LIB_SSL")"
+    BSSL_LIB_CRYPTO="$(dirname "$BSSL_LIB_CRYPTO")"
 
     log "BoringSSL built successfully"
 }
