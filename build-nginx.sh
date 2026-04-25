@@ -9,7 +9,7 @@ set -euo pipefail
 NGINX_VERSION="${NGINX_VERSION:-1.30.0}"
 BORINGSSL_COMMIT="${BORINGSSL_COMMIT:-master}"
 JOBS="${JOBS:-$(nproc)}"
-PREFIX="${PREFIX:-/opt/nginx}"
+PREFIX="${PREFIX:-/etc/nginx}"
 
 WORK_DIR="/tmp/nginx-build"
 SRC_DIR="$WORK_DIR/src"
@@ -144,13 +144,15 @@ build_nginx() {
 
     ./configure \
         --prefix="$PREFIX" \
-        --sbin-path="$PREFIX/sbin/nginx" \
-        --modules-path="$PREFIX/modules" \
+        --sbin-path="/usr/sbin/nginx" \
+        --modules-path="/usr/lib/nginx/modules" \
         --conf-path="$PREFIX/conf/nginx.conf" \
         --error-log-path=/var/log/nginx/error.log \
         --http-log-path=/var/log/nginx/access.log \
         --pid-path=/var/run/nginx.pid \
         --lock-path=/var/run/nginx.lock \
+        --user=nginx \
+        --group=nginx \
         --with-threads \
         --with-file-aio \
         --with-pcre-jit \
