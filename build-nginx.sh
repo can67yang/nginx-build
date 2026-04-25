@@ -7,7 +7,7 @@ set -euo pipefail
 # ============================================================
 
 NGINX_VERSION="${NGINX_VERSION:-1.30.0}"
-BORINGSSL_COMMIT="${BORINGSSL_COMMIT:-master}"
+BORINGSSL_COMMIT="${BORINGSSL_COMMIT:-main}"
 JOBS="${JOBS:-$(nproc)}"
 PREFIX="${PREFIX:-/etc/nginx}"
 

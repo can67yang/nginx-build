@@ -13,14 +13,14 @@ on:
       boringssl_commit:
         description: 'BoringSSL commit/branch/tag'
         required: true
-        default: 'master'
+        default: 'main'
       publish_release:
         description: 'Create GitHub Release'
         type: boolean
         default: false
 
 env:
-  BORINGSSL_COMMIT: ${{ inputs.boringssl_commit || 'master' }}
+  BORINGSSL_COMMIT: ${{ inputs.boringssl_commit || 'main' }}
 
 jobs:
   resolve-version:
