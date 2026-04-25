@@ -53,9 +53,6 @@ jobs:
         target:
           - debian:12
           - debian:13
-          - ubuntu:22.04
-          - ubuntu:24.04
-          - ubuntu:25.04
 
     container:
       image: ${{ matrix.target }}
@@ -101,4 +98,4 @@ jobs:
             /tmp/release-artifacts/*/*.tar.gz \
             /tmp/release-artifacts/*/*.sha256 \
             --title "nginx ${NGINX_VER} + BoringSSL" \
-            --notes "Automated build of nginx ${NGINX_VER} with BoringSSL (${BORINGSSL_COMMIT}) for Debian 12/13 and Ubuntu 22.04-25.04."
+            --notes "Automated build of nginx ${NGINX_VER} with BoringSSL (${BORINGSSL_COMMIT}) for Debian 12/13."
