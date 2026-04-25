@@ -35,9 +35,6 @@ mkdir -p "$SRC_DIR" "$INSTALL_DIR" "$ARTIFACT_DIR"
 install_deps() {
     log "Installing build dependencies..."
 
-    # Map codenames for Debian
-    OS_CODENAME="${VERSION_CODENAME:-}"
-
     apt-get update -qq
     apt-get install -y -qq --no-install-recommends \
         ca-certificates \
@@ -197,7 +194,10 @@ build_nginx() {
     make install DESTDIR="$INSTALL_DIR"
 
     log "nginx built successfully"
-    "$INSTALL_DIR/$PREFIX/sbin/nginx" -V 2>&1 || true
+    local nginx_bin=$(find "$INSTALL_DIR" -name nginx -type f 2>/dev/null | head -1) || true
+    if [ -n "$nginx_bin" ]; then
+        "$nginx_bin" -V 2>&1 || true
+    fi
 }
 
 build_nginx
@@ -220,7 +220,10 @@ package() {
     sha256sum "$pkg_file" > "${pkg_file}.sha256"
 
     # Also copy the binary directly for convenience
-    cp "$INSTALL_DIR/$PREFIX/sbin/nginx" "$ARTIFACT_DIR/nginx-${NGINX_VERSION}-boringssl"
+    local nginx_bin=$(find "$INSTALL_DIR" -name nginx -type f 2>/dev/null | head -1) || true
+    if [ -n "$nginx_bin" ]; then
+        cp "$nginx_bin" "$ARTIFACT_DIR/nginx-${NGINX_VERSION}-boringssl"
+    fi
 
     log "Artifacts:"
     ls -lh "$ARTIFACT_DIR/"
