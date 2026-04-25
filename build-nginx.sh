@@ -94,8 +94,9 @@ build_boringssl() {
     cmake -GNinja \
         -DBUILD_SHARED_LIBS=0 \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_C_FLAGS="-fPIC" \
-        -DCMAKE_CXX_FLAGS="-fPIC" \
+        -DCMAKE_C_FLAGS="-fPIC -Wno-error=array-bounds" \
+        -DCMAKE_CXX_FLAGS="-fPIC -Wno-error=array-bounds" \
+        -DBUILD_TESTING=OFF \
         "$bssl_src"
     ninja -j"$JOBS"
 
