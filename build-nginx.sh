@@ -49,6 +49,7 @@ install_deps() {
         ninja-build \
         libpcre2-dev \
         zlib1g-dev \
+        libssl-dev \
         libxslt1-dev \
         libgd-dev \
         libgeoip-dev \
@@ -145,10 +146,9 @@ build_nginx() {
 
     cd "$NGINX_SRC"
 
-    # CFLAGS must be set so nginx's auto/cc/conf populates CC_TEST_FLAGS,
-    # which is needed for configure feature tests (like OpenSSL detection)
-    # to find our BoringSSL include path via --with-cc-opt.
-    export CFLAGS="-I$BSSL_INCLUDE"
+    # Debug: verify BoringSSL paths
+    log "BSSL_INCLUDE=$BSSL_INCLUDE"
+    ls "$BSSL_INCLUDE/openssl/ssl.h" >&2 || err "BoringSSL header not found at $BSSL_INCLUDE/openssl/ssl.h"
 
     ./configure \
         --prefix="$PREFIX" \
