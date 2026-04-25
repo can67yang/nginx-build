@@ -56,6 +56,7 @@ install_deps() {
         tar \
         xz-utils \
         pkg-config \
+        dpkg-dev \
         || err "Failed to install core dependencies"
 
     # Extra tools needed
@@ -206,24 +207,122 @@ build_nginx
 # 5) Package artifacts
 # ----------------------------------------------------------
 package() {
-    local pkg_name="nginx-${NGINX_VERSION}-${OS_ID}${OS_VERSION}-${OS_ARCH}-boringssl"
-    local pkg_file="${pkg_name}.tar.gz"
+    local pkg_name="nginx-boringssl"
+    local pkg_ver="${NGINX_VERSION}-1"
+    local arch="amd64"
+    local deb_file="${pkg_name}_${pkg_ver}_${arch}.deb"
 
-    log "Packaging $pkg_file..."
+    log "Packaging $deb_file..."
 
-    cd "$INSTALL_DIR"
-    tar czf "$ARTIFACT_DIR/$pkg_file" \
-        --transform "s|^\.|$pkg_name|" \
-        .
+    # --- Create DEBIAN control directory ---
+    mkdir -p "$INSTALL_DIR/DEBIAN"
+
+    # Generate dependency list from the built binary
+    local depends=""
+    if command -v dpkg-shlibdeps >/dev/null 2>&1; then
+        depends=$(dpkg-shlibdeps -O "$INSTALL_DIR/usr/sbin/nginx" 2>/dev/null \
+            | grep -oP 'shlibs:Depends=\K.*' \
+            | sed 's/,/\n/g' \
+            | sed 's/^[[:space:]]*//' \
+            | sort -u \
+            | paste -sd ', ') || true
+    fi
+    [ -z "$depends" ] && depends="libc6, libpcre2-8-0, zlib1g"
+
+    # control file
+    cat > "$INSTALL_DIR/DEBIAN/control" <<CONTROL
+Package: nginx-boringssl
+Version: $pkg_ver
+Architecture: $arch
+Maintainer: nginx-boringssl builder <builder@localhost>
+Depends: $depends
+Section: httpd
+Priority: optional
+Homepage: https://nginx.org
+Description: nginx ${NGINX_VERSION} with BoringSSL (HTTP/3, ECH)
+ Custom build of nginx with BoringSSL for HTTP/3 (QUIC) and ECH.
+ Built for ${OS_ID} ${OS_VERSION} (${OS_ARCH}).
+CONTROL
+
+    # conffiles
+    cat > "$INSTALL_DIR/DEBIAN/conffiles" <<'CONFFILES'
+/etc/nginx/conf/nginx.conf
+CONFFILES
+
+    # postinst — create nginx user & dirs, enable service
+    cat > "$INSTALL_DIR/DEBIAN/postinst" <<'POSTINST'
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        if ! getent group nginx >/dev/null 2>&1; then
+            addgroup --system nginx
+        fi
+        if ! getent passwd nginx >/dev/null 2>&1; then
+            adduser --system --disabled-login --ingroup nginx \
+                --home /var/cache/nginx --no-create-home \
+                --shell /sbin/nologin nginx
+        fi
+        mkdir -p /var/log/nginx /var/cache/nginx
+        chown -R nginx:nginx /var/log/nginx /var/cache/nginx
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl daemon-reload
+            systemctl enable nginx || true
+        fi
+        ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+    *)
+        ;;
+esac
+POSTINST
+    chmod 755 "$INSTALL_DIR/DEBIAN/postinst"
+
+    # postrm — cleanup on purge
+    cat > "$INSTALL_DIR/DEBIAN/postrm" <<'POSTRM'
+#!/bin/sh
+set -e
+case "$1" in
+    purge)
+        if getent passwd nginx >/dev/null 2>&1; then userdel nginx; fi
+        if getent group nginx >/dev/null 2>&1; then groupdel nginx; fi
+        rm -rf /var/log/nginx /var/cache/nginx
+        ;;
+    remove|upgrade|disappear|abort-install|abort-upgrade) ;;
+    *) ;;
+esac
+POSTRM
+    chmod 755 "$INSTALL_DIR/DEBIAN/postrm"
+
+    # --- systemd service ---
+    mkdir -p "$INSTALL_DIR/lib/systemd/system"
+    cat > "$INSTALL_DIR/lib/systemd/system/nginx.service" <<'SERVICE'
+[Unit]
+Description=nginx - high performance web server
+Documentation=https://nginx.org/en/docs/
+After=network-online.target remote-fs.target nss-lookup.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/nginx.pid
+ExecStartPre=/usr/sbin/nginx -t -q -g 'daemon on; master_process on;'
+ExecStart=/usr/sbin/nginx -g 'daemon on; master_process on;'
+ExecReload=/usr/sbin/nginx -s reload
+ExecStop=-/sbin/start-stop-daemon --quiet --stop --retry QUIT/5 --pidfile /var/run/nginx.pid
+TimeoutStopSec=5
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+
+    # --- Build .deb ---
+    dpkg-deb --build -Zxz "$INSTALL_DIR" "$ARTIFACT_DIR/$deb_file"
 
     cd "$ARTIFACT_DIR"
-    sha256sum "$pkg_file" > "${pkg_file}.sha256"
-
-    # Also copy the binary directly for convenience
-    local nginx_bin=$(find "$INSTALL_DIR" -name nginx -type f 2>/dev/null | head -1) || true
-    if [ -n "$nginx_bin" ]; then
-        cp "$nginx_bin" "$ARTIFACT_DIR/nginx-${NGINX_VERSION}-boringssl"
-    fi
+    sha256sum "$deb_file" > "${deb_file}.sha256"
 
     log "Artifacts:"
     ls -lh "$ARTIFACT_DIR/"

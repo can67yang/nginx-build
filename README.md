@@ -1,6 +1,6 @@
 # nginx + BoringSSL 自动构建
 
-通过 GitHub Actions 自动编译 [nginx](https://nginx.org/) 并静态链接 [BoringSSL](https://boringssl.googlesource.com/boringssl)，支持 Debian 12/13。
+通过 GitHub Actions 自动编译 [nginx](https://nginx.org/) 并静态链接 [BoringSSL](https://boringssl.googlesource.com/boringssl)，打包为 `.deb`，支持 Debian 12/13。
 
 ## 特性
 
@@ -9,6 +9,7 @@
 - **多平台** — 同时构建 Debian 12 (bookworm) 和 Debian 13 (trixie)
 - **自动检测最新版** — 触发工作流时自动从 nginx.org 获取最新稳定版
 - **静态链接 BoringSSL** — 不依赖系统 OpenSSL，开箱即用
+- **`.deb` 打包** — 标准 Debian 包，含 systemd 服务、安装/卸载脚本、自动依赖
 
 ## 使用方式
 
@@ -16,7 +17,6 @@
 
 | 触发方式 | 说明 |
 |---|---|
-| `git push` / PR | 自动检测 nginx 最新版并构建 |
 | 手动触发 | GitHub 页面 → **Actions** → **Build nginx with BoringSSL** → **Run workflow** |
 
 手动触发时可指定：
@@ -27,12 +27,35 @@
 
 ### 构建产物
 
-每个目标平台生成一个 `.tar.gz` 包，包含完整的 nginx 安装目录：
+每个目标平台生成一个 `.deb` 包：
 
 ```
-nginx-{version}-debian{ver}-x86_64-boringssl.tar.gz
-nginx-{version}-debian{ver}-x86_64-boringssl.tar.gz.sha256
-nginx-{version}-boringssl                          # 纯二进制文件
+nginx-boringssl_{version}-1_amd64.deb
+nginx-boringssl_{version}-1_amd64.deb.sha256
+```
+
+### 安装
+
+```bash
+# 安装
+sudo dpkg -i nginx-boringssl_1.30.0-1_amd64.deb
+
+# 启动服务
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+# 验证
+nginx -V
+```
+
+### 卸载
+
+```bash
+# 保留配置
+sudo dpkg -r nginx-boringssl
+
+# 完全清除（删除用户、日志、缓存）
+sudo dpkg --purge nginx-boringssl
 ```
 
 ### 本地构建
@@ -41,7 +64,7 @@ nginx-{version}-boringssl                          # 纯二进制文件
 # 安装依赖（Debian/Ubuntu）
 sudo apt install build-essential golang-go cmake ninja-build \
   libpcre2-dev zlib1g-dev libxslt1-dev libgd-dev libgeoip-dev \
-  perl git
+  perl git dpkg-dev
 
 # 构建
 export NGINX_VERSION=1.30.0
@@ -77,18 +100,15 @@ bash build-nginx.sh
 
 ```
 .github/workflows/nginx-build.yml   # GitHub Actions 工作流
-build-nginx.sh                       # 构建脚本
+build-nginx.sh                       # 构建脚本（编译 nginx + BoringSSL 并打包 .deb）
 ```
 
-## 安装到目标系统
+## 包内容
 
-```bash
-# 解压到根目录
-sudo tar xzf nginx-1.30.0-debian12-x86_64-boringssl.tar.gz -C /
+`.deb` 包安装后包含以下内容：
 
-# 创建 nginx 用户
-sudo useradd -r -s /sbin/nologin -d /var/cache/nginx nginx
-
-# 验证
-nginx -V
-```
+- `/usr/sbin/nginx` — 主程序
+- `/etc/nginx/` — 配置文件目录
+- `/usr/lib/nginx/modules/` — 动态模块
+- `/lib/systemd/system/nginx.service` — systemd 服务单元
+- 安装时自动创建 `nginx` 用户、`/var/log/nginx`、`/var/cache/nginx`

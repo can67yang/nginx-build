@@ -1,9 +1,9 @@
 name: Build nginx with BoringSSL
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
+  #push:
+  #  branches: [main, master]
+  #pull_request:
   workflow_dispatch:
     inputs:
       nginx_version:
@@ -102,7 +102,7 @@ jobs:
         run: |
           TAG_NAME="nginx-${NGINX_VER}-boringssl-$(date +%Y%m%d)"
           gh release create "$TAG_NAME" \
-            /tmp/release-artifacts/*/*.tar.gz \
+            /tmp/release-artifacts/*/*.deb \
             /tmp/release-artifacts/*/*.sha256 \
             --title "nginx ${NGINX_VER} + BoringSSL" \
             --notes "Automated build of nginx ${NGINX_VER} with BoringSSL (${BORINGSSL_COMMIT}) for Debian 12/13."
