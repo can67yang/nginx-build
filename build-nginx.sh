@@ -183,8 +183,6 @@ build_nginx() {
         --with-stream \
         --with-stream_ssl_module \
         --with-stream_realip_module \
-        --with-stream_geoip_module \
-        --with-http_geoip_module \
         --with-http_image_filter_module \
         --with-http_xslt_module \
         --with-cc-opt="-I$BSSL_INCLUDE -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-stringop-truncation" \
