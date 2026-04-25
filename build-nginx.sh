@@ -22,7 +22,7 @@ OS_ID="${ID:-unknown}"
 OS_VERSION="${VERSION_ID:-unknown}"
 OS_ARCH="$(uname -m)"
 
-log() { echo "[*] $*"; }
+log() { echo "[*] $*" >&2; }
 err() { echo "[!] $*" >&2; exit 1; }
 
 # Create directories
