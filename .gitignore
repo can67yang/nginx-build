@@ -1,0 +1,4 @@
+# Artifacts
+/tmp/nginx-build/
+*.tar.gz
+*.sha256

@@ -1,0 +1,83 @@
+name: Build nginx with BoringSSL
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      nginx_version:
+        description: 'nginx version (e.g. 1.30.0)'
+        required: true
+        default: '1.30.0'
+      boringssl_commit:
+        description: 'BoringSSL commit/branch/tag'
+        required: true
+        default: 'master'
+      publish_release:
+        description: 'Create GitHub Release (takes effect on workflow_dispatch only)'
+        type: boolean
+        default: false
+
+env:
+  NGINX_VERSION: ${{ inputs.nginx_version || '1.30.0' }}
+  BORINGSSL_COMMIT: ${{ inputs.boringssl_commit || 'master' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - debian:12
+          - debian:13
+          - ubuntu:22.04
+          - ubuntu:24.04
+          - ubuntu:25.04
+
+    container:
+      image: ${{ matrix.target }}
+      options: --user root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build nginx with BoringSSL
+        run: |
+          export NGINX_VERSION="${NGINX_VERSION}"
+          export BORINGSSL_COMMIT="${BORINGSSL_COMMIT}"
+          bash build-nginx.sh
+        shell: bash
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nginx-boringssl-${{ matrix.target }}
+          path: /tmp/nginx-build/artifact/
+          if-no-files-found: error
+          retention-days: 30
+
+  # Optional: create a release with all artifacts
+  release:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/release-artifacts
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG_NAME="nginx-${NGINX_VERSION}-boringssl-$(date +%Y%m%d)"
+          gh release create "$TAG_NAME" \
+            /tmp/release-artifacts/*/*.tar.gz \
+            /tmp/release-artifacts/*/*.sha256 \
+            --title "nginx ${NGINX_VERSION} + BoringSSL" \
+            --notes "Automated build of nginx ${NGINX_VERSION} with BoringSSL (${BORINGSSL_COMMIT}) for multiple Linux distributions."
