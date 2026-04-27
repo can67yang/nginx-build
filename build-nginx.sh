@@ -152,7 +152,7 @@ build_nginx() {
         --prefix="$PREFIX" \
         --sbin-path="/usr/sbin/nginx" \
         --modules-path="/usr/lib/nginx/modules" \
-        --conf-path="$PREFIX/conf/nginx.conf" \
+        --conf-path="$PREFIX/nginx.conf" \
         --error-log-path=/var/log/nginx/error.log \
         --http-log-path=/var/log/nginx/access.log \
         --pid-path=/var/run/nginx.pid \
@@ -225,7 +225,7 @@ package() {
             | sort -u \
             | paste -sd ', ') || true
     fi
-    [ -z "$depends" ] && depends="libc6, libpcre2-8-0, zlib1g"
+    [ -z "$depends" ] && depends="libc6, libpcre2-8-0, zlib1g, libxslt1.1, libgd3"
 
     # control file
     cat > "$INSTALL_DIR/DEBIAN/control" <<CONTROL
@@ -244,7 +244,7 @@ CONTROL
 
     # conffiles
     cat > "$INSTALL_DIR/DEBIAN/conffiles" <<'CONFFILES'
-/etc/nginx/conf/nginx.conf
+/etc/nginx/nginx.conf
 CONFFILES
 
     # postinst — create nginx user & dirs, enable service
