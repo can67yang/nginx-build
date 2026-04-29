@@ -114,11 +114,5 @@ jobs:
             /tmp/release-artifacts/*/*.sha256 \
             /tmp/release-artifacts/*/*.so \
             --title "nginx ${NGINX_VER} + BoringSSL" \
-            --notes "$(cat <<NOTES
-Automated build of nginx ${NGINX_VER} with BoringSSL (${BORINGSSL_COMMIT}) for Debian 12/13.
-
-Includes:
-- nginx binary (.deb)
-- brutal-nginx dynamic module (.so)
-NOTES
-)"
+            --notes "$(printf 'Automated build of nginx %s with BoringSSL (%s) for Debian 12/13.\n\nIncludes:\n- nginx binary (.deb)\n- brutal-nginx dynamic module (.so)' \
+              "${NGINX_VER}" "${BORINGSSL_COMMIT}")"
