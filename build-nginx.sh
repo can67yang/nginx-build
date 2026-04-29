@@ -185,6 +185,7 @@ build_nginx() {
         --with-stream_realip_module \
         --with-http_image_filter_module \
         --with-http_xslt_module \
+        --with-compat \
         --with-cc-opt="-I$BSSL_INCLUDE -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wno-stringop-truncation" \
         --with-ld-opt="-L$BSSL_LIB_SSL -L$BSSL_LIB_CRYPTO -lssl -lcrypto -lstdc++ -lpthread -ldl -lresolv"
 
