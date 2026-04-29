@@ -68,6 +68,12 @@ jobs:
         run: bash build-nginx.sh
         shell: bash
 
+      - name: Build brutal-nginx dynamic module
+        env:
+          NGINX_VERSION: ${{ needs.resolve-version.outputs.nginx_version }}
+        run: bash build-module-brutal.sh
+        shell: bash
+
       - name: Prepare artifact name
         id: artifact-name
         shell: bash
@@ -106,5 +112,10 @@ jobs:
           gh release create "$TAG_NAME" \
             /tmp/release-artifacts/*/*.deb \
             /tmp/release-artifacts/*/*.sha256 \
+            /tmp/release-artifacts/*/*.so \
             --title "nginx ${NGINX_VER} + BoringSSL" \
-            --notes "Automated build of nginx ${NGINX_VER} with BoringSSL (${BORINGSSL_COMMIT}) for Debian 12/13."
+            --notes "Automated build of nginx ${NGINX_VER} with BoringSSL (${BORINGSSL_COMMIT}) for Debian 12/13.
+
+Includes:
+- nginx binary (.deb)
+- brutal-nginx dynamic module (.so)"
