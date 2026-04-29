@@ -103,7 +103,9 @@ else
 fi
 
 # Verify it's a valid shared object
-file "$ARTIFACT_DIR/ngx_http_tcp_brutal_module.so" >&2
+if command -v file &>/dev/null; then
+    file "$ARTIFACT_DIR/ngx_http_tcp_brutal_module.so" >&2
+fi
 
 log "Done. The .so is at: $ARTIFACT_DIR/ngx_http_tcp_brutal_module.so"
 log "Copy it to your target machine and load it in nginx.conf:"
