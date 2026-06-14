@@ -60,19 +60,25 @@ mv "$WORK_DIR/nginx-$NGINX_VERSION" "$MODULE_NGINX_DIR"
 # ----------------------------------------------------------
 MUNDO_DIR="$WORK_DIR/mundo-brutal-nginx"
 MUNDO_REPO="https://github.com/can67yang/mundo-brutal-nginx.git"
-GIT_EXTRA=""
-[ -n "${GH_PAT:-}" ] && GIT_EXTRA="-c http.extraheader=AUTHORIZATION: bearer $GH_PAT"
+
+# Wrapper: inject auth header when GH_PAT is set
+git_with_auth() {
+    if [ -n "${GH_PAT:-}" ]; then
+        git -c "http.extraheader=AUTHORIZATION: bearer $GH_PAT" "$@"
+    else
+        git "$@"
+    fi
+}
 
 if [ -d "$MUNDO_DIR/.git" ]; then
     log "Updating mundo-brutal-nginx..."
     cd "$MUNDO_DIR"
-    # Update origin URL in case it changed, and refresh auth
     git remote set-url origin "$MUNDO_REPO"
-    git $GIT_EXTRA pull --ff-only
+    git_with_auth pull --ff-only
 else
     log "Cloning mundo-brutal-nginx..."
     rm -rf "$MUNDO_DIR"
-    git $GIT_EXTRA clone --depth 1 "$MUNDO_REPO" "$MUNDO_DIR"
+    git_with_auth clone --depth 1 "$MUNDO_REPO" "$MUNDO_DIR"
 fi
 
 # ----------------------------------------------------------
