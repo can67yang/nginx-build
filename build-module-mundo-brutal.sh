@@ -61,10 +61,15 @@ mv "$WORK_DIR/nginx-$NGINX_VERSION" "$MODULE_NGINX_DIR"
 MUNDO_DIR="$WORK_DIR/mundo-brutal-nginx"
 MUNDO_REPO="https://github.com/can67yang/mundo-brutal-nginx.git"
 
-# Wrapper: inject auth header when GH_PAT is set
+# Wrapper: authenticate via GIT_ASKPASS when GH_PAT is set
 git_with_auth() {
     if [ -n "${GH_PAT:-}" ]; then
-        git -c "http.extraheader=AUTHORIZATION: bearer $GH_PAT" "$@"
+        local askpass
+        askpass="$(mktemp)"
+        printf '#!/bin/sh\necho "%s"\n' "$GH_PAT" > "$askpass"
+        chmod +x "$askpass"
+        GIT_ASKPASS="$askpass" git "$@"
+        rm -f "$askpass"
     else
         git "$@"
     fi
