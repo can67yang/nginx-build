@@ -56,15 +56,23 @@ mv "$WORK_DIR/nginx-$NGINX_VERSION" "$MODULE_NGINX_DIR"
 
 # ----------------------------------------------------------
 # 3) Clone / update mundo-brutal-nginx source
+#    (private repo — use GH_PAT env var for authentication)
 # ----------------------------------------------------------
 MUNDO_DIR="$WORK_DIR/mundo-brutal-nginx"
+MUNDO_REPO="https://github.com/can67yang/mundo-brutal-nginx.git"
+if [ -n "${GH_PAT:-}" ]; then
+    MUNDO_REPO="https://${GH_PAT}@github.com/can67yang/mundo-brutal-nginx.git"
+fi
+
 if [ -d "$MUNDO_DIR/.git" ]; then
     log "Updating mundo-brutal-nginx..."
-    cd "$MUNDO_DIR" && git pull --ff-only
+    cd "$MUNDO_DIR"
+    git remote set-url origin "$MUNDO_REPO"
+    git pull --ff-only
 else
     log "Cloning mundo-brutal-nginx..."
     rm -rf "$MUNDO_DIR"
-    git clone --depth 1 https://github.com/can67yang/mundo-brutal-nginx.git "$MUNDO_DIR"
+    git clone --depth 1 "$MUNDO_REPO" "$MUNDO_DIR"
 fi
 
 # ----------------------------------------------------------
